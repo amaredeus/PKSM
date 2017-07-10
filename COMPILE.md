@@ -44,7 +44,7 @@ Once installed, make sure you have access to a C compiler from `cmd`. If you're 
 `C:\Development\mingw-w64` and then add the path `C:\Development\mingw-w64\mingw32\bin` to your env variables.
 
 Open command prompt as an **administrator** and `cd` into the devkitPro installation folder. Some commands need admin 
-rights to properly install.
+rights to properly install. Additionally make sure your antivirus software does not interfere. 
 
 Next `git clone` the latest [3ds_portlibs]:
 * zlib

@@ -10,3 +10,6 @@ badsectors/build
 .idea/
 CMakeLists.txt
 cmake-build-debug/
+
+# Other
+run.bat

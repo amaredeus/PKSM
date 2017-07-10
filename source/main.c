@@ -106,6 +106,7 @@ bool initServices() {
 			fclose(temp1);
 			swprintf(str, 60, i18n(S_DOWNLOADING_ASSETS), i + 1);
 			freezeMsg(str);
+            // TODO: alternate way obtain additional assets for emulation loading
 			downloadFile(url[i], path[i]);
 			isDownloaded = true;
 		} else
@@ -160,11 +161,17 @@ bool initServices() {
 }
 
 int main() {
-	if (initServices()) {
+    bool didServiceInit = initServices();
+	if (didServiceInit) {
 		infoDisp(i18n(S_MAIN_RESTART_APP));
 		exitServices();
 		return 0;
 	}
+
+    // Does not reach here on emulator
+    infoDisp(i18n(S_MAIN_RESTART_APP));
+    exitServices();
+    return 0;
 	
 	for (int i = 0; i < ASSETS; i++) {
 		if(!checkFile(path[i])) {
@@ -188,6 +195,7 @@ int main() {
 	const u64 ids[] = {0x0004000000055D00, 0x0004000000055E00, 0x000400000011C400, 0x000400000011C500, 0x0004000000164800, 0x0004000000175E00};
 	char *gamesList[] = {"X", "Y", "OR", "AS", "S", "M", "D", "P", "PL", "HG", "SS", "B", "W", "B2", "W2"};
 
+    // Main loop
 	while (aptMainLoop() && !(hidKeysDown() & KEY_A)) {
 		hidScanInput();
 		game = calcCurrentEntryOneScreen(game, 14, 4);
