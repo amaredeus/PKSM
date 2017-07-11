@@ -12,4 +12,6 @@ CMakeLists.txt
 cmake-build-debug/
 
 # Other
+clean.bat
+build.bat
 run.bat

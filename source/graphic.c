@@ -140,7 +140,6 @@ void initProgressLoadPNGInRAM(int total) {
 	loadPNGInRAM_elements = total;
 }
 
-
 int getGUIElementsI18nSpecifyTotalElements(int game) {
 	return IS3DS ? 1 : 0;
 }
@@ -554,6 +553,10 @@ void printBottomIndications(const wchar_t* message) {
 	sftd_draw_wtext(fontBold9, (320 - sftd_get_wtext_width(fontBold9, 9, message)) / 2, 225, LIGHTBLUE, 9, message);
 }
 
+/**
+ * Enter the selected game
+ * @param n
+ */
 void gameSelectorMenu(int n) {
 	sf2d_start_frame(GFX_TOP, GFX_LEFT);
 		printMenuTop();

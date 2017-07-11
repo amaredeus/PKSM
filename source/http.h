@@ -19,4 +19,4 @@
 #pragma once
 #include "common.h"
 
-Result downloadFile(char* url, char* path);
+bool downloadFile(char* url, char* path);

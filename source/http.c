@@ -18,7 +18,7 @@
 
 #include "http.h"
 
-Result downloadFile(char* url, char* path) {
+bool downloadFile(char* url, char* path) {
     httpcInit(0);
     httpcContext context;
     u32 statuscode = 0;
@@ -28,19 +28,19 @@ Result downloadFile(char* url, char* path) {
     if (httpcOpenContext(&context, HTTPC_METHOD_GET, url, 0)) {
         infoDisp(i18n(S_HTTP_HTTP_CONTEXT_OPEN_FAILED));
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
-        return -1;
+        return false;
     }
 
     if (httpcAddRequestHeaderField(&context, "User-Agent", "PKSM")) {
         infoDisp(i18n(S_HTTP_ADD_REQUEST_HEADER_FIELD_FAILED));
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
-        return -1;
+        return false;
     }
 	
     if (httpcSetSSLOpt(&context, SSLCOPT_DisableVerify)) {
         infoDisp(i18n(S_HTTP_SET_SSLOPT_FAILED));
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
-        return -1;
+        return false;
     }
 	
 	httpcAddRequestHeaderField(&context, "Connection", "Keep-Alive");
@@ -48,14 +48,14 @@ Result downloadFile(char* url, char* path) {
     if (httpcBeginRequest(&context)) {
         infoDisp(i18n(S_HTTP_BEGIN_HTTP_REQUEST_FAILED));
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
-        return -1;
+        return false;
     }
 
     if (httpcGetResponseStatusCode(&context, &statuscode)) {
         infoDisp(i18n(S_HTTP_RECEIVE_STATUS_CODE_FAILED));
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
         httpcCloseContext(&context);
-        return -1;
+        return false;
     }
 
     if (statuscode != 200) {
@@ -64,16 +64,15 @@ Result downloadFile(char* url, char* path) {
             if (httpcGetResponseHeader(&context, (char*)"Location", newUrl, 1024)) {
                 infoDisp(i18n(S_HTTP_REDIRECTION_FAILED));
 				infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
-                return -1;
+                return false;
             }
             httpcCloseContext(&context);
-            downloadFile(newUrl, path);
-            return -1;
+            return downloadFile(newUrl, path);
         } else {
             infoDisp(i18n(S_HTTP_REDIRECTION_FAILED));
 			infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
             httpcCloseContext(&context);
-            return -1;
+            return false;
         }
     }
 
@@ -81,7 +80,7 @@ Result downloadFile(char* url, char* path) {
         infoDisp(i18n(S_HTTP_RECEIVE_DOWNLOAD_SIZE_FAILED));
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
         httpcCloseContext(&context);
-        return -1;
+        return false;
     }
 
     buf = (u8*)malloc(contentsize);
@@ -89,7 +88,7 @@ Result downloadFile(char* url, char* path) {
 		free(buf);
         infoDisp(i18n(S_HTTP_ALLOC_MEMORY_FAILED));
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
-        return -1;
+        return false;
     }
     memset(buf, 0, contentsize);
 
@@ -97,7 +96,7 @@ Result downloadFile(char* url, char* path) {
         free(buf);
 		infoDisp(i18n(S_HTTP_DOWNLOAD_ASSETS_FAILED));
         httpcCloseContext(&context);
-        return -1;
+        return false;
     }
 
     remove(path);
@@ -108,5 +107,5 @@ Result downloadFile(char* url, char* path) {
 
     httpcCloseContext(&context);
     httpcExit();
-    return 0;
+    return true;
 }

@@ -10,6 +10,3 @@
 [submodule "buildtools"]
 	path = buildtools
 	url = https://github.com/BernardoGiordano/buildtools.git
-[submodule "assets/PKResources"]
-	path = assets/PKResources
-	url = git@github.com:dsoldier/PKResources.git
