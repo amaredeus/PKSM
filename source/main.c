@@ -63,16 +63,6 @@ void exitServices() {
 	cfguExit();
 }
 
-void loadMenu() {
-	GUIElementsInit();
-	FXElementsInit();
-	GUIGameElementsInit();
-}
-
-void exitMenu() {
-	GUIGameElementsExit();
-}
-
 bool initServices() {
 	bool isDownloaded = false;
 	cfguInit();
@@ -170,8 +160,7 @@ bool initServices() {
 }
 
 int main() {
-    bool didServiceInit = initServices();
-	if (didServiceInit) {
+	if (initServices()) {
 		infoDisp(i18n(S_MAIN_RESTART_APP));
 		exitServices();
 		return 0;
@@ -199,195 +188,189 @@ int main() {
 	const u64 ids[] = {0x0004000000055D00, 0x0004000000055E00, 0x000400000011C400, 0x000400000011C500, 0x0004000000164800, 0x0004000000175E00};
 	char *gamesList[] = {"X", "Y", "OR", "AS", "S", "M", "D", "P", "PL", "HG", "SS", "B", "W", "B2", "W2"};
 
-    // Inf game loop, allows returning to game menu
-    while (true) {
-		// Main Menu
-		while (aptMainLoop() && !(hidKeysDown() & KEY_A)) {
-            hidScanInput();
-            game = calcCurrentEntryOneScreen(game, 14, 4); // get user's game choice
-            if (hidKeysDown() & KEY_B) {
-                exitServices();
-                return 0;
-            }
-            gameSelectorMenu(game); // Enter the selected game
-        }
+	while (aptMainLoop() && !(hidKeysDown() & KEY_A)) {
+		hidScanInput();
+		game = calcCurrentEntryOneScreen(game, 14, 4);
 
-        GUIGameElementsExit();
-        freezeMsg(i18n(S_MAIN_LOADING_SAVE));
+		if (hidKeysDown() & KEY_B) {
+			exitServices();
+			return 0;
+		}
 
-        if (IS3DS) {
-            if (!(openSaveArch(&saveArch, ids[game]))) {
-                infoDisp(i18n(S_MAIN_GAME_NOT_FOUND));
-				int myMainMenu[] = {S_MAIN_MENU_EXTRA_STORAGE, S_MAIN_MENU_EDITOR, S_MAIN_MENU_EVENTS,
-									S_MAIN_MENU_SAVE_INFO, S_MAIN_MENU_SETTINGS, S_MAIN_MENU_CREDITS};
-				menu(myMainMenu);
-                continue;
-//			exitServices();
-//			return -1;
-            }
+		gameSelectorMenu(game);
+	}
 
-            FSUSER_OpenFile(&mainHandle, saveArch, fsMakePath(PATH_ASCII, "/main"), FS_OPEN_READ | FS_OPEN_WRITE, 0);
-            FSFILE_GetSize(mainHandle, &mainSize);
+	GUIGameElementsExit();
+	freezeMsg(i18n(S_MAIN_LOADING_SAVE));
 
-            switch(game) {
-                case GAME_X : { if (mainSize != 415232)    infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
-                case GAME_Y : { if (mainSize != 415232)    infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
-                case GAME_OR : { if (mainSize != 483328)   infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
-                case GAME_AS : { if (mainSize != 483328)   infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
-                case GAME_SUN : { if (mainSize != 441856)  infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
-                case GAME_MOON : { if (mainSize != 441856) infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
-                    exitServices();
-                    return -1;
-            }
+	if (IS3DS) {
+		if (!(openSaveArch(&saveArch, ids[game]))) {
+			infoDisp(i18n(S_MAIN_GAME_NOT_FOUND));
+			exitServices();
+			return -1;
+		}
 
-            mainbuf = malloc(mainSize);
-            FSFILE_Read(mainHandle, NULL, 0, mainbuf, mainSize);
-        }
+		FSUSER_OpenFile(&mainHandle, saveArch, fsMakePath(PATH_ASCII, "/main"), FS_OPEN_READ | FS_OPEN_WRITE, 0);
+		FSFILE_GetSize(mainHandle, &mainSize);
 
-        else if (ISDS) {
-            FS_CardType t;
-            if (FSUSER_GetCardType(&t)) {
-                infoDisp(i18n(S_MAIN_NO_CARTRIDGE));
-                exitServices();
-                return -1;
-            }
-            u8 data[0x3B4];
-            FSUSER_GetLegacyRomHeader(MEDIATYPE_GAME_CARD, 0LL, data);
+		switch(game) {
+			case GAME_X : { if (mainSize != 415232)    infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
+			case GAME_Y : { if (mainSize != 415232)    infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
+			case GAME_OR : { if (mainSize != 483328)   infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
+			case GAME_AS : { if (mainSize != 483328)   infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
+			case GAME_SUN : { if (mainSize != 441856)  infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
+			case GAME_MOON : { if (mainSize != 441856) infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE)); break; }
+			exitServices();
+			return -1;
+		}
 
-            CardType cardType_;
-            SPIGetCardType(&cardType_, (*(data + 12) == 'I') ? 1 : 0);
+		mainbuf = malloc(mainSize);
+		FSFILE_Read(mainHandle, NULL, 0, mainbuf, mainSize);
+	}
 
-            mainSize = SPIGetCapacity(cardType_);
+	else if (ISDS) {
+		FS_CardType t;
+		if (FSUSER_GetCardType(&t)) {
+			infoDisp(i18n(S_MAIN_NO_CARTRIDGE));
+			exitServices();
+			return -1;
+		}
+		u8 data[0x3B4];
+		FSUSER_GetLegacyRomHeader(MEDIATYPE_GAME_CARD, 0LL, data);
 
-            if (mainSize != 524288) {
-                infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE));
-                exitServices();
-                return -1;
-            }
-            mainbuf = malloc(mainSize);
+		CardType cardType_;
+		SPIGetCardType(&cardType_, (*(data + 12) == 'I') ? 1 : 0);
 
-            TWLstoreSaveFile(mainbuf, cardType_);
-            if (ISGEN4) {
-                GBO = 0x40000 * getActiveGBO(mainbuf, game);
-                SBO = 0x40000 * getActiveSBO(mainbuf, game);
-            }
-        }
+		mainSize = SPIGetCapacity(cardType_);
 
-        char *bakpath = (char*)malloc(100 * sizeof(char));
-        time_t unixTime = time(NULL);
-        struct tm* timeStruct = gmtime((const time_t *)&unixTime);
-        snprintf(bakpath, 100, "sdmc:/3ds/data/PKSM/backup/%s_%02i%02i%02i%02i%02i%02i", gamesList[game], timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
-        mkdir(bakpath, 777);
-        chdir(bakpath);
-        FILE *f = fopen("main", "wb");
-        fwrite(mainbuf, 1, mainSize, f);
-        fclose(f);
-        free(bakpath);
+		if (mainSize != 524288) {
+			infoDisp(i18n(S_MAIN_INCORRECT_SAVE_SIZE));
+			exitServices();
+			return -1;
+		}
+		mainbuf = malloc(mainSize);
 
-        bool touchPressed = false;
+		TWLstoreSaveFile(mainbuf, cardType_);
+		if (ISGEN4) {
+			GBO = 0x40000 * getActiveGBO(mainbuf, game);
+			SBO = 0x40000 * getActiveSBO(mainbuf, game);
+		}
+	}
 
-        GUIElementsSpecify(game);
+	char *bakpath = (char*)malloc(100 * sizeof(char));
+	time_t unixTime = time(NULL);
+	struct tm* timeStruct = gmtime((const time_t *)&unixTime);
+	snprintf(bakpath, 100, "sdmc:/3ds/data/PKSM/backup/%s_%02i%02i%02i%02i%02i%02i", gamesList[game], timeStruct->tm_year + 1900, timeStruct->tm_mon + 1, timeStruct->tm_mday, timeStruct->tm_hour, timeStruct->tm_min, timeStruct->tm_sec);
+	mkdir(bakpath, 777);
+	chdir(bakpath);
+	FILE *f = fopen("main", "wb");
+	fwrite(mainbuf, 1, mainSize, f);
+	fclose(f);
+	free(bakpath);
 
-        if (IS3DS) {
-            int mainMenu[] = {S_MAIN_MENU_EXTRA_STORAGE, S_MAIN_MENU_EDITOR, S_MAIN_MENU_EVENTS, S_MAIN_MENU_SAVE_INFO, S_MAIN_MENU_SETTINGS, S_MAIN_MENU_CREDITS};
-            while (aptMainLoop()) {
-                hidScanInput();
-                touchPosition touch;
-                hidTouchRead(&touch);
+	bool touchPressed = false;
 
-                if (hidKeysDown() & KEY_START) {
-                    if (!confirmDisp(i18n(S_MAIN_Q_SAVE_CHANGES)))
-                        save = false;
-                    break;
-                }
+	GUIElementsSpecify(game);
 
-                if (hidKeysDown() & KEY_TOUCH) {
-                    if (touch.px > 15 && touch.px < 155 && touch.py > 20 && touch.py < 73) {
-                        bank(mainbuf, game);
-                    }
+	if (IS3DS) {
+		int mainMenu[] = {S_MAIN_MENU_EXTRA_STORAGE, S_MAIN_MENU_EDITOR, S_MAIN_MENU_EVENTS, S_MAIN_MENU_SAVE_INFO, S_MAIN_MENU_SETTINGS, S_MAIN_MENU_CREDITS};
+		while (aptMainLoop()) {
+			hidScanInput();
+			touchPosition touch;
+			hidTouchRead(&touch);
 
-                    if (touch.px > 165 && touch.px < 305 && touch.py > 20 && touch.py < 73) {
-                        pokemonEditor(mainbuf, game);
-                    }
+			if (hidKeysDown() & KEY_START) {
+				if (!confirmDisp(i18n(S_MAIN_Q_SAVE_CHANGES)))
+					save = false;
+				break;
+			}
 
-                    if (touch.px > 15 && touch.px < 155 && touch.py > 83 && touch.py < 136) {
-                        eventDatabase7(mainbuf, game);
-                    }
+			if (hidKeysDown() & KEY_TOUCH) {
+				if (touch.px > 15 && touch.px < 155 && touch.py > 20 && touch.py < 73) {
+					bank(mainbuf, game);
+				}
 
-                    if (touch.px > 165 && touch.px < 305 && touch.py > 83 && touch.py < 136) {
-                        saveFileEditor(mainbuf, game, mainSize);
-                    }
+				if (touch.px > 165 && touch.px < 305 && touch.py > 20 && touch.py < 73) {
+					pokemonEditor(mainbuf, game);
+				}
 
-                    if (touch.px > 15 && touch.px < 155 && touch.py > 146 && touch.py < 199) {
-                        settingsMenu(mainbuf, game);
-                        continue;
-                    }
+				if (touch.px > 15 && touch.px < 155 && touch.py > 83 && touch.py < 136) {
+					eventDatabase7(mainbuf, game);
+				}
 
-                    if (touch.px > 165 && touch.px < 305 && touch.py > 146 && touch.py < 199) {
-                        printCredits();
-                    }
-                }
+				if (touch.px > 165 && touch.px < 305 && touch.py > 83 && touch.py < 136) {
+					saveFileEditor(mainbuf, game, mainSize);
+				}
 
-                menu(mainMenu);
-            }
-        } else {
-            while (aptMainLoop()) {
-                hidScanInput();
-                touchPosition touch;
-                hidTouchRead(&touch);
-                currentEntry = calcCurrentEntryOneScreen(currentEntry, 2, 1);
+				if (touch.px > 15 && touch.px < 155 && touch.py > 146 && touch.py < 199) {
+					settingsMenu(mainbuf, game);
+					continue;
+				}
 
-                if (hidKeysDown() & KEY_START) {
-                    if (!confirmDisp(i18n(S_MAIN_Q_SAVE_CHANGES)))
-                        save = false;
-                    break;
-                }
+				if (touch.px > 165 && touch.px < 305 && touch.py > 146 && touch.py < 199) {
+					printCredits();
+				}
+			}
 
-                if (hidKeysDown() & KEY_TOUCH) {
-                    if (touch.px > 97 && touch.px < 222) {
-                        if (touch.py > 66 && touch.py < 105) { currentEntry = 0; touchPressed = true; }
-                        if (touch.py > 123 && touch.py < 164) { currentEntry = 1; touchPressed = true; }
-                    }
-                }
+			menu(mainMenu);
+		}
+	} else {
+		while (aptMainLoop()) {
+			hidScanInput();
+			touchPosition touch;
+			hidTouchRead(&touch);
+			currentEntry = calcCurrentEntryOneScreen(currentEntry, 2, 1);
 
-                if ((hidKeysDown() & KEY_A) || touchPressed) {
-                    touchPressed = false;
-                    switch (currentEntry) {
-                        case 0 : {
-                            eventDatabase5(mainbuf, game);
-                            break;
-                        }
-                        case 1 : {
-                            saveFileEditor(mainbuf, game, mainSize);
-                            break;
-                        }
-                    }
-                }
+			if (hidKeysDown() & KEY_START) {
+				if (!confirmDisp(i18n(S_MAIN_Q_SAVE_CHANGES)))
+					save = false;
+				break;
+			}
 
-                mainMenuDS(currentEntry);
-            }
-        }
+			if (hidKeysDown() & KEY_TOUCH) {
+				if (touch.px > 97 && touch.px < 222) {
+					if (touch.py > 66 && touch.py < 105) { currentEntry = 0; touchPressed = true; }
+					if (touch.py > 123 && touch.py < 164) { currentEntry = 1; touchPressed = true; }
+				}
+			}
 
-        if (save) {
-            if (IS3DS || ISGEN5)
-                rewriteCHK(mainbuf, game);
-            else if (ISGEN4)
-                rewriteCHK4(mainbuf, game, GBO, SBO);
-        }
+			if ((hidKeysDown() & KEY_A) || touchPressed) {
+				touchPressed = false;
+				switch (currentEntry) {
+					case 0 : {
+						eventDatabase5(mainbuf, game);
+						break;
+					}
+					case 1 : {
+						saveFileEditor(mainbuf, game, mainSize);
+						break;
+					}
+				}
+			}
 
-        if (IS3DS) {
-            FSFILE_Write(mainHandle, NULL, 0, mainbuf, mainSize, FS_WRITE_FLUSH);
-            FSFILE_Close(mainHandle);
-            if (save)
-                FSUSER_ControlArchive(saveArch, ARCHIVE_ACTION_COMMIT_SAVE_DATA, NULL, 0, NULL, 0);
-            FSUSER_CloseArchive(saveArch);
-        }
-        else if (ISDS && save)
-            TWLinjectSave(mainbuf, mainSize);
+			mainMenuDS(currentEntry);
+		}
+	}
 
-        free(mainbuf);
+	if (save) {
+		if (IS3DS || ISGEN5)
+			rewriteCHK(mainbuf, game);
+		else if (ISGEN4)
+			rewriteCHK4(mainbuf, game, GBO, SBO);
+	}
 
-        exitServices();
-        return 0;
-    }
+	if (IS3DS) {
+		FSFILE_Write(mainHandle, NULL, 0, mainbuf, mainSize, FS_WRITE_FLUSH);
+		FSFILE_Close(mainHandle);
+		if (save)
+			FSUSER_ControlArchive(saveArch, ARCHIVE_ACTION_COMMIT_SAVE_DATA, NULL, 0, NULL, 0);
+		FSUSER_CloseArchive(saveArch);
+	}
+	else if (ISDS && save)
+		TWLinjectSave(mainbuf, mainSize);
+
+	free(mainbuf);
+
+	exitServices();
+	return 0;
 }
